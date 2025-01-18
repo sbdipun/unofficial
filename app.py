@@ -33,7 +33,7 @@ async def fetch_html(url):
             return None
 
 async def fetch_title_links():
-    """ Scrape the first 5 movie title links from the page """
+    """ Scrape the first 13 movie title links from the page """
     html = await fetch_html(BASE_URL)
     if not html:
         return []
@@ -50,7 +50,7 @@ async def fetch_title_links():
         if title_link and title_link['href'].startswith('//'):
             links.append('https:' + title_link['href'])
 
-    return links[:13]  # ✅ Scrape only first 5 movies
+    return links[:13]  # ✅ Scrape only first 13 movies
 
 async def fetch_page_title_and_magnet(link):
     """ Extract movie title and magnet link from a movie page """
@@ -85,7 +85,7 @@ def home():
 
 @app.route('/rss', methods=['GET'])
 def rss():
-    """ Fetch first 15 movie titles and magnet links as RSS feed """
+    """ Fetch first 13 movie titles and magnet links as RSS feed """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
