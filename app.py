@@ -1,6 +1,7 @@
 import asyncio
 import re
 import html
+import lxml
 import httpx
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, Response
