@@ -2,3 +2,4 @@ quart
 httpx
 beautifulsoup4
 gunicorn
+asgiref
