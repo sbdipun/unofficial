@@ -47,7 +47,7 @@ async def fetch_title_links():
         if title_link and title_link['href'].startswith('//'):
             links.append('https:' + title_link['href'])
 
-    return links[:10]  # ✅ Scrape only first 5 movies
+    return links[:15]  # ✅ Scrape only first 5 movies
 
 async def fetch_page_title_and_magnet(link):
     """ Extract movie title and magnet link from a movie page """
