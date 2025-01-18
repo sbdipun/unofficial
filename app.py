@@ -47,7 +47,7 @@ async def fetch_title_links():
         if title_link and title_link['href'].startswith('//'):
             links.append('https:' + title_link['href'])
 
-    return links[:15]  # ✅ Scrape only first 5 movies
+    return links[:13]  # ✅ Scrape only first 5 movies
 
 async def fetch_page_title_and_magnet(link):
     """ Extract movie title and magnet link from a movie page """
@@ -103,11 +103,12 @@ def rss():
             """
 
     # Generate the full RSS feed
+    base_url = f"https://www.1377x.to/cat/Movies/1/"
     rss_feed = f"""<?xml version="1.0" encoding="UTF-8"?>
     <rss version="2.0">
         <channel>
             <title>1337x RSS Feed</title>
-            <link>{BASE_URL}</link>
+            <link>{base_url}</link>
             <description>Latest Movies and TV Shows</description>
             {rss_items}
         </channel>
