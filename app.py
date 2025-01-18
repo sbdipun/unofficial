@@ -2,7 +2,7 @@ import asyncio
 import re
 import httpx
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Response
 
 app = Flask(__name__)
 
@@ -72,14 +72,13 @@ async def fetch_page_title_and_magnet(link):
 
     return title, magnet
 
-
 @app.route('/')
 def home():
-    return "✅ Async Flask Scraper is Running!"
+    return "✅ 1337x Scrapper Is Running"
 
 @app.route('/rss', methods=['GET'])
 def rss():
-    """ Fetch first 5 movie titles and magnet links as JSON """
+    """ Fetch first 15 movie titles and magnet links as RSS feed """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
@@ -91,12 +90,31 @@ def rss():
     tasks = [fetch_page_title_and_magnet(link) for link in title_links]
     results = loop.run_until_complete(asyncio.gather(*tasks))
 
-    data = [{"title": title, "magnet": magnet} for title, magnet in results if title and magnet]
+    # Generate RSS items
+    rss_items = ""
+    for title, magnet in results:
+        if title and magnet:
+            rss_items += f"""
+            <item>
+                <title>{title}</title>
+                <link>{magnet}</link>
+                <description>Mag link:</description>
+            </item>
+            """
 
-    if not data:
-        return jsonify({"error": "No valid data scraped"}), 500
+    # Generate the full RSS feed
+    rss_feed = f"""<?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0">
+        <channel>
+            <title>1337x RSS Feed</title>
+            <link>{BASE_URL}</link>
+            <description>Latest Movies and TV Shows</description>
+            {rss_items}
+        </channel>
+    </rss>
+    """
 
-    return jsonify(data)
+    return Response(rss_feed, content_type='application/rss+xml')
 
 if __name__ == "__main__":
     app.run(debug=True)
