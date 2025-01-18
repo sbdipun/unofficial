@@ -70,6 +70,10 @@ async def fetch_page_title_and_magnet(link):
     # ✅ Remove [1337x.HashHackers.Com] from the magnet link if it exists
     if magnet and "[1337x.HashHackers.Com]" in magnet:
         magnet = magnet.replace("[1337x.HashHackers.Com]", "").strip()
+        
+    # ✅ Escape special characters in magnet link to avoid XML parsing issues
+    if magnet:
+        magnet = html.escape(magnet)
 
     return title, magnet
 
@@ -97,8 +101,8 @@ def rss():
         if title and magnet:
             rss_items += f"""
             <item>
-                <title>{html.escape(item['title'])}</title>
-                <link>{html.escape(item['magnet'])}</link>
+                <title>{title}</title>
+                <link>{magnet}</link>
                 <description>Mag link:</description>
             </item>
             """
