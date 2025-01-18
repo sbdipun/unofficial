@@ -75,7 +75,7 @@ async def fetch_page_title_and_magnet(link):
         
     # ✅ Escape special characters in magnet link to avoid XML parsing issues
     if magnet:
-        magnet = html.escape(magnet)
+        magnet = escape(magnet)
 
     return title, magnet
 
