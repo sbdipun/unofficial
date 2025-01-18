@@ -6,7 +6,7 @@ from flask import Flask, jsonify
 
 app = Flask(__name__)
 
-# ✅ Update URL and Headers to bypass Cloudflare protection
+# ✅ Updated URL and Headers
 BASE_URL = "https://old-gods.hashl02mn.workers.dev/1737267564929/cat/Movies/1/"
 COOKIES = {'hashhackers_1337x_web_app': 'QBcphs7Xe/KJWn1RnYQNlQ=='}
 HEADERS = {
@@ -20,7 +20,6 @@ async def fetch_html(url):
             response = await client.get(url, cookies=COOKIES, headers=HEADERS)
             if response.status_code != 200:
                 print(f"❌ Failed to fetch {url} - Status Code: {response.status_code}")
-                print("Response:", response.text[:500])  # Print first 500 chars for debugging
                 return None
             return response.text
         except httpx.TimeoutException:
@@ -31,7 +30,7 @@ async def fetch_html(url):
             return None
 
 async def fetch_title_links():
-    """ Scrape all movie title links from the page """
+    """ Scrape the first 5 movie title links from the page """
     html = await fetch_html(BASE_URL)
     if not html:
         return []
@@ -47,9 +46,8 @@ async def fetch_title_links():
         title_link = a.find_next_sibling('a')
         if title_link and title_link['href'].startswith('//'):
             links.append('https:' + title_link['href'])
-    
-    print(f"✅ Found {len(links)} movie links")
-    return links
+
+    return links[:5]  # ✅ Scrape only first 5 movies
 
 async def fetch_page_title_and_magnet(link):
     """ Extract movie title and magnet link from a movie page """
@@ -76,7 +74,7 @@ def home():
 
 @app.route('/rss', methods=['GET'])
 def rss():
-    """ Fetch movie titles and magnet links as JSON """
+    """ Fetch first 5 movie titles and magnet links as JSON """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
@@ -84,11 +82,11 @@ def rss():
     if not title_links:
         return jsonify({"error": "No links found"}), 500
 
-    data = []
-    for link in title_links:
-        title, magnet = loop.run_until_complete(fetch_page_title_and_magnet(link))
-        if title and magnet:
-            data.append({"title": title, "magnet": magnet})
+    # ✅ Run multiple tasks asynchronously
+    tasks = [fetch_page_title_and_magnet(link) for link in title_links]
+    results = loop.run_until_complete(asyncio.gather(*tasks))
+
+    data = [{"title": title, "magnet": magnet} for title, magnet in results if title and magnet]
 
     if not data:
         return jsonify({"error": "No valid data scraped"}), 500
