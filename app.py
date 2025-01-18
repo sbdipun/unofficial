@@ -16,6 +16,18 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
 }
 
+def clean_magnet_link(magnet):
+    """Remove specific tracker domain from the magnet link."""
+    # Remove [1337x.HashHackers.Com] from the display name
+    magnet = re.sub(r'(?<=dn=)\[1337x\.HashHackers\.Com\]', '', magnet)
+    
+    # Clean up any extra '&' left behind after removal
+    magnet = re.sub(r'&+', '&', magnet)
+    if magnet.endswith('&'):
+        magnet = magnet[:-1]
+
+    return magnet
+
 async def fetch_html(url):
     """ Fetch HTML content with error handling and timeout """
     async with httpx.AsyncClient(timeout=10) as client:
@@ -69,9 +81,9 @@ async def fetch_page_title_and_magnet(link):
                 magnet = match.group(1)
                 break
 
-    # ✅ Remove [1337x.HashHackers.Com] from the magnet link if it exists
-    if magnet and "[1337x.HashHackers.Com]" in magnet:
-        magnet = magnet.replace("[1337x.HashHackers.Com]", "").strip()
+    # ✅ Clean the magnet link by removing the specific tracker domain
+    if magnet:
+        magnet = clean_magnet_link(magnet)
         
     # ✅ Escape special characters in magnet link to avoid XML parsing issues
     if magnet:
