@@ -1,5 +1,4 @@
-quart
+flask
 httpx
 beautifulsoup4
 gunicorn
-hypercorn 
