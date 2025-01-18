@@ -1,9 +1,10 @@
+import asyncio
 import re
 import httpx
 from bs4 import BeautifulSoup
-from quart import Quart, jsonify
+from flask import Flask, jsonify
 
-app = Quart(__name__)
+app = Flask(__name__)
 
 # ✅ Update URL and Headers to bypass Cloudflare protection
 BASE_URL = "https://old-gods.hashl02mn.workers.dev/1737267564929/cat/Movies/1/"
@@ -73,19 +74,22 @@ async def fetch_page_title_and_magnet(link):
     return title, magnet
 
 @app.route('/')
-async def home():
-    return "✅ Async Scraper is Running!"
+def home():
+    return "✅ Async Flask Scraper is Running!"
 
 @app.route('/rss', methods=['GET'])
-async def rss():
+def rss():
     """ Fetch movie titles and magnet links as JSON """
-    title_links = await fetch_title_links()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    title_links = loop.run_until_complete(fetch_title_links())
     if not title_links:
         return jsonify({"error": "No links found"}), 500
 
     data = []
     for link in title_links:
-        title, magnet = await fetch_page_title_and_magnet(link)
+        title, magnet = loop.run_until_complete(fetch_page_title_and_magnet(link))
         if title and magnet:
             data.append({"title": title, "magnet": magnet})
 
@@ -95,7 +99,4 @@ async def rss():
     return jsonify(data)
 
 if __name__ == "__main__":
-    import hypercorn.asyncio
-    import asyncio
-    config = hypercorn.Config()
-    asyncio.run(hypercorn.asyncio.serve(app, config))
+    app.run(debug=True, host="0.0.0.0", port=8000)
