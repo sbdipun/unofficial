@@ -1,5 +1,6 @@
 import asyncio
 import re
+import html
 import httpx
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, Response
@@ -96,8 +97,8 @@ def rss():
         if title and magnet:
             rss_items += f"""
             <item>
-                <title>{title}</title>
-                <link>{magnet}</link>
+                <title>{html.escape(item['title'])}</title>
+                <link>{html.escape(item['magnet'])}</link>
                 <description>Mag link:</description>
             </item>
             """
