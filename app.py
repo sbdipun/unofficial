@@ -2,7 +2,6 @@ import re
 import httpx
 from bs4 import BeautifulSoup
 from quart import Quart, jsonify
-from asgiref.wsgi import WsgiToAsgi  # 👈 Convert Quart to WSGI
 
 app = Quart(__name__)
 
@@ -51,5 +50,9 @@ async def rss():
     data = [{"title": title, "magnet": magnet} for link in title_links if (title := (await fetch_page_title_and_magnet(link))[0]) and (magnet := (await fetch_page_title_and_magnet(link))[1])]
     return jsonify(data)
 
-# ✅ Convert Quart to WSGI for Vercel
-app = WsgiToAsgi(app)
+if __name__ == "__main__":
+    import hypercorn.asyncio
+    import asyncio
+    config = hypercorn.Config()
+    config.bind = ["0.0.0.0:8000"]
+    asyncio.run(hypercorn.asyncio.serve(app, config))
