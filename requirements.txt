@@ -2,3 +2,4 @@ flask
 httpx
 beautifulsoup4
 gunicorn
+html
