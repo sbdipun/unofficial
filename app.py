@@ -66,7 +66,12 @@ async def fetch_page_title_and_magnet(link):
                 magnet = match.group(1)
                 break
 
+    # ✅ Remove [1337x.HashHackers.Com] from the magnet link if it exists
+    if magnet and "[1337x.HashHackers.Com]" in magnet:
+        magnet = magnet.replace("[1337x.HashHackers.Com]", "").strip()
+
     return title, magnet
+
 
 @app.route('/')
 def home():
