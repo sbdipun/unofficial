@@ -2,6 +2,7 @@ import asyncio
 import re
 import html
 import lxml
+from xml.sax.saxutils import escape
 import httpx
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, Response
