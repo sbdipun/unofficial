@@ -84,10 +84,6 @@ async def fetch_page_title_and_magnet(link):
     # ✅ Clean the magnet link by removing the specific tracker domain
     if magnet:
         magnet = clean_magnet_link(magnet)
-        
-    # ✅ Escape special characters in magnet link to avoid XML parsing issues
-    if magnet:
-        magnet = escape(magnet)
 
     return title, magnet
 
