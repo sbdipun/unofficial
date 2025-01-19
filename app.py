@@ -116,7 +116,7 @@ def rss():
     rss_items = ""
     for title, magnet, file_size in results:
         if title and magnet:
-            description = f"{file_size if file_size else '.'}"
+            description = f"Size: {file_size if file_size else '.'}"
             rss_items += f"""
             <item>
                 <title>{title}</title>
