@@ -18,14 +18,10 @@ HEADERS = {
 
 def clean_magnet_link(magnet):
     """Remove specific tracker domain from the magnet link."""
-    # Remove [1337x.HashHackers.Com] from the display name
     magnet = re.sub(r'(?<=dn=)\[1337x\.HashHackers\.Com\]', '', magnet)
-    
-    # Clean up any extra '&' left behind after removal
     magnet = re.sub(r'&+', '&', magnet)
     if magnet.endswith('&'):
         magnet = magnet[:-1]
-
     return magnet
 
 async def fetch_html(url):
@@ -64,11 +60,11 @@ async def fetch_title_links():
 
     return links[:13]  # ✅ Scrape only first 13 movies
 
-async def fetch_page_title_and_magnet(link):
-    """ Extract movie title and magnet link from a movie page """
+async def fetch_page_details(link):
+    """ Extract movie title, magnet link, and file size from a movie page """
     html = await fetch_html(link)
     if not html:
-        return None, None
+        return None, None, None
 
     soup = BeautifulSoup(html, 'html.parser')
     title = soup.title.string.replace("Download", "").replace("Torrent", "").strip() if soup.title else "No title"
@@ -85,15 +81,26 @@ async def fetch_page_title_and_magnet(link):
     if magnet:
         magnet = clean_magnet_link(magnet)
 
-    return title, magnet
+    # Extract file size
+    file_size = None
+    lists = soup.find_all("ul", class_="list")
+    for ul in lists:
+        for li in ul.find_all("li"):
+            strong_tag = li.find("strong")
+            span_tag = li.find("span")
+            if strong_tag and span_tag and strong_tag.text.strip() == "Total size":
+                file_size = span_tag.text.strip()
+                break
+
+    return title, magnet, file_size
 
 @app.route('/')
 def home():
-    return "✅ 1337x Scrapper Is Running"
+    return "✅ 1337x Scraper Is Running"
 
 @app.route('/rss', methods=['GET'])
 def rss():
-    """ Fetch first 13 movie titles and magnet links as RSS feed """
+    """ Fetch first 13 movie titles, magnet links, and file sizes as RSS feed """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
@@ -102,18 +109,19 @@ def rss():
         return jsonify({"error": "No links found"}), 500
 
     # ✅ Run multiple tasks asynchronously
-    tasks = [fetch_page_title_and_magnet(link) for link in title_links]
+    tasks = [fetch_page_details(link) for link in title_links]
     results = loop.run_until_complete(asyncio.gather(*tasks))
 
     # Generate RSS items
     rss_items = ""
-    for title, magnet in results:
+    for title, magnet, file_size in results:
         if title and magnet:
+            description = f"{file_size if file_size else '.'}"
             rss_items += f"""
             <item>
                 <title>{title}</title>
                 <link>{magnet}</link>
-                <description>Mag link:</description>
+                <description>{description}</description>
             </item>
             """
 
