@@ -10,7 +10,7 @@ from flask import Flask, jsonify, Response
 app = Flask(__name__)
 
 # ✅ Updated URL and Headers
-BASE_URL = "https://old-gods.hash5ub26.workers.dev/1742825455607/cat/Movies/1/"
+BASE_URL = "https://old-gods.hash0t5ce.workers.dev/1743080857276/cat/Movies/1/"
 COOKIES = {'hashhackers_1337x_web_app': 'QBcphs7Xe/KJWn1RnYQNlQ=='}
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
