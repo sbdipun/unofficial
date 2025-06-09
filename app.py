@@ -1,144 +1,158 @@
 import asyncio
 import re
 import html
-import lxml
-from xml.sax.saxutils import escape
 import httpx
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify, Response
+from flask import Flask, Response
 
 app = Flask(__name__)
 
-# ✅ Updated URL and Headers
+# Updated Configuration
 BASE_URL = "https://old-gods.8juncf.workers.dev/1749534372373/cat/Movies/1/"
-COOKIES = {'hashhackers_1337x_web_app': 'HauCWD+Kkoit9v19AHzEew=='}
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+    "authority": "old-gods.8juncf.workers.dev",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "accept-encoding": "gzip, deflate, br, zstd",
+    "accept-language": "en-US,en;q=0.7",
+    "cache-control": "max-age=0",
+    "cookie": "hashhackers_1337x_web_app=HauCWD+Kkoit9v19AHzEew==",
+    "priority": "u=0, i",
+    "sec-ch-ua": '"Brave";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "sec-fetch-dest": "document",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "none",
+    "sec-fetch-user": "?1",
+    "sec-gpc": "1",
+    "upgrade-insecure-requests": "1",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
 }
 
 def clean_magnet_link(magnet):
-    """Remove specific tracker domain from the magnet link."""
+    """Clean magnet links from tracker artifacts"""
     magnet = re.sub(r'(?<=dn=)\[1337x\.HashHackers\.Com\]', '', magnet)
     magnet = re.sub(r'&+', '&', magnet)
-    if magnet.endswith('&'):
-        magnet = magnet[:-1]
-    return magnet
+    return magnet.rstrip('&')
 
 async def fetch_html(url):
-    """ Fetch HTML content with error handling and timeout """
-    async with httpx.AsyncClient(timeout=10) as client:
+    """Fetch HTML with exact headers required by the proxy"""
+    async with httpx.AsyncClient(
+        headers=HEADERS,
+        timeout=30.0,
+        follow_redirects=True,
+        http2=True  # Important for some workers.dev proxies
+    ) as client:
         try:
-            response = await client.get(url, cookies=COOKIES, headers=HEADERS)
-            if response.status_code != 200:
-                print(f"❌ Failed to fetch {url} - Status Code: {response.status_code}")
-                return None
+            response = await client.get(url)
+            response.raise_for_status()
             return response.text
-        except httpx.TimeoutException:
-            print(f"⏳ Timeout fetching {url}")
-            return None
+        except httpx.HTTPStatusError as e:
+            print(f"HTTP Error {e.response.status_code} for {url}")
         except Exception as e:
-            print(f"🔥 Error fetching {url}: {e}")
-            return None
+            print(f"Error fetching {url}: {str(e)}")
+        return None
 
 async def fetch_title_links():
-    """ Scrape the first 13 movie title links from the page """
-    html = await fetch_html(BASE_URL)
-    if not html:
+    """Scrape movie links from the main page"""
+    html_content = await fetch_html(BASE_URL)
+    if not html_content:
         return []
 
-    soup = BeautifulSoup(html, 'html.parser')
-    tbody = soup.find('tbody')
-    if not tbody:
-        print("⚠️ <tbody> not found in the HTML")
-        return []
-
+    soup = BeautifulSoup(html_content, 'html.parser')
     links = []
-    for a in tbody.find_all('a', class_='icon'):
-        title_link = a.find_next_sibling('a')
-        if title_link and title_link['href'].startswith('//'):
-            links.append('https:' + title_link['href'])
-
-    return links[:13]  # ✅ Scrape only first 13 movies
+    
+    # More robust table parsing
+    table = soup.find('table', class_='table-list')
+    if table:
+        for row in table.find_all('tr')[1:14]:  # First 13 rows (skip header)
+            link = row.find('a', href=re.compile(r'/torrent/'))
+            if link and link.get('href'):
+                links.append(f"https:{link['href']}")
+    
+    return links[:13]
 
 async def fetch_page_details(link):
-    """ Extract movie title, magnet link, and file size from a movie page """
-    html = await fetch_html(link)
-    if not html:
+    """Extract torrent details from individual pages"""
+    html_content = await fetch_html(link)
+    if not html_content:
         return None, None, None
 
-    soup = BeautifulSoup(html, 'html.parser')
-    title = soup.title.string.replace("Download", "").replace("Torrent", "").strip() if soup.title else "No title"
-
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # Title extraction
+    title = "Unknown"
+    if soup.title:
+        title = soup.title.text.replace("Download", "").replace("Torrent", "").strip()
+    
+    # Magnet link extraction
     magnet = None
     for script in soup.find_all('script'):
-        if script.string:
+        if script.string and 'mainMagnetURL' in script.string:
             match = re.search(r'var mainMagnetURL\s*=\s*"(magnet:[^"]+)"', script.string)
             if match:
-                magnet = match.group(1)
+                magnet = clean_magnet_link(match.group(1))
                 break
-
-    # ✅ Clean the magnet link by removing the specific tracker domain
-    if magnet:
-        magnet = clean_magnet_link(magnet)
-
-    # Extract file size
-    file_size = None
-    lists = soup.find_all("ul", class_="list")
-    for ul in lists:
-        for li in ul.find_all("li"):
-            strong_tag = li.find("strong")
-            span_tag = li.find("span")
-            if strong_tag and span_tag and strong_tag.text.strip() == "Total size":
-                file_size = span_tag.text.strip()
+    
+    # File size extraction
+    file_size = "N/A"
+    for li in soup.find_all('li'):
+        if 'Total size' in li.text:
+            size_span = li.find('span')
+            if size_span:
+                file_size = size_span.text.strip()
                 break
-
+    
     return title, magnet, file_size
+
+@app.route('/rss')
+def generate_rss():
+    """Generate RSS feed endpoint"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    try:
+        # Fetch all data
+        links = loop.run_until_complete(fetch_title_links())
+        if not links:
+            return Response("<error>No torrents found</error>", status=500, mimetype='application/xml')
+        
+        results = loop.run_until_complete(asyncio.gather(
+            *[fetch_page_details(link) for link in links]
+        ))
+        
+        # Build RSS items
+        items = []
+        for title, magnet, size in results:
+            if title and magnet:
+                items.append(f"""
+                <item>
+                    <title>{html.escape(title)}</title>
+                    <link>{html.escape(magnet)}</link>
+                    <description>Size: {html.escape(size)}</description>
+                </item>
+                """)
+        
+        # Complete RSS feed
+        rss = f"""<?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0">
+            <channel>
+                <title>1337x Torrent Feed</title>
+                <link>{BASE_URL}</link>
+                <description>Latest movies from 1337x</description>
+                {''.join(items)}
+            </channel>
+        </rss>
+        """
+        
+        return Response(rss, mimetype='application/rss+xml')
+    
+    except Exception as e:
+        return Response(f"<error>{str(e)}</error>", status=500, mimetype='application/xml')
 
 @app.route('/')
 def home():
-    return "✅ 1337x Scraper Is Running"
+    return "1337x RSS Proxy Service - Use /rss endpoint"
 
-@app.route('/rss', methods=['GET'])
-def rss():
-    """ Fetch first 13 movie titles, magnet links, and file sizes as RSS feed """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    title_links = loop.run_until_complete(fetch_title_links())
-    if not title_links:
-        return jsonify({"error": "No links found"}), 500
-
-    # ✅ Run multiple tasks asynchronously
-    tasks = [fetch_page_details(link) for link in title_links]
-    results = loop.run_until_complete(asyncio.gather(*tasks))
-
-    # Generate RSS items
-    rss_items = ""
-    for title, magnet, file_size in results:
-        if title and magnet:
-            description = f"Size: {file_size if file_size else '.'}"
-            rss_items += f"""
-            <item>
-                <title>{title}</title>
-                <link>{magnet}</link>
-                <description>{description}</description>
-            </item>
-            """
-
-    # Generate the full RSS feed
-    base_url = f"https://www.1377x.to/cat/Movies/1/"
-    rss_feed = f"""<?xml version="1.0" encoding="UTF-8"?>
-    <rss version="2.0">
-        <channel>
-            <title>1337x RSS Feed</title>
-            <link>{base_url}</link>
-            <description>Latest Movies and TV Shows</description>
-            {rss_items}
-        </channel>
-    </rss>
-    """
-
-    return Response(rss_feed, content_type='application/rss+xml')
-
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
