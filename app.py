@@ -1,71 +1,50 @@
-import asyncio
 import re
 import html
-import lxml
-from xml.sax.saxutils import escape
-import httpx
-from bs4 import BeautifulSoup
 from flask import Flask, jsonify, Response
+from bs4 import BeautifulSoup
+import cloudscraper
 
 app = Flask(__name__)
 
-# ✅ Updated URL and Headers
 BASE_URL = "https://old-gods.8juncf.workers.dev/1749534372373/cat/Movies/1/"
 COOKIES = {'hashhackers_1337x_web_app': 'HauCWD+Kkoit9v19AHzEew=='}
 HEADERS = {
     "authority": "old-gods.8juncf.workers.dev",
-    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-    "accept-encoding": "gzip, deflate, br, zstd",
-    "accept-language": "en-US,en;q=0.7",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "accept-encoding": "gzip, deflate, br",
+    "accept-language": "en-US,en;q=0.9",
     "cache-control": "max-age=0",
     "cookie": "hashhackers_1337x_web_app=HauCWD+Kkoit9v19AHzEew==",
-    "priority": "u=0, i",
-    "sec-ch-ua": '"Brave";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Windows"',
-    "sec-fetch-dest": "document",
-    "sec-fetch-mode": "navigate",
-    "sec-fetch-site": "none",
-    "sec-fetch-user": "?1",
-    "sec-gpc": "1",
-    "upgrade-insecure-requests": "1",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
 }
 
+scraper = cloudscraper.create_scraper()
+
 def clean_magnet_link(magnet):
-    """Remove specific tracker domain from the magnet link."""
     magnet = re.sub(r'(?<=dn=)\[1337x\.HashHackers\.Com\]', '', magnet)
     magnet = re.sub(r'&+', '&', magnet)
-    if magnet.endswith('&'):
-        magnet = magnet[:-1]
-    return magnet
+    return magnet.rstrip('&')
 
-async def fetch_html(url):
-    """ Fetch HTML content with error handling and timeout """
-    async with httpx.AsyncClient(timeout=10) as client:
-        try:
-            response = await client.get(url, cookies=COOKIES, headers=HEADERS)
-            if response.status_code != 200:
-                print(f"❌ Failed to fetch {url} - Status Code: {response.status_code}")
-                return None
-            return response.text
-        except httpx.TimeoutException:
-            print(f"⏳ Timeout fetching {url}")
-            return None
-        except Exception as e:
-            print(f"🔥 Error fetching {url}: {e}")
-            return None
+def fetch_html(url):
+    try:
+        res = scraper.get(url, headers=HEADERS, cookies=COOKIES, timeout=10)
+        if res.status_code == 200:
+            return res.text
+        print(f"❌ Failed to fetch {url} - Status Code: {res.status_code}")
+        return None
+    except Exception as e:
+        print(f"🔥 Error fetching {url}: {e}")
+        return None
 
-async def fetch_title_links():
-    """ Scrape the first 13 movie title links from the page """
-    html = await fetch_html(BASE_URL)
-    if not html:
+def fetch_title_links():
+    html_text = fetch_html(BASE_URL)
+    if not html_text:
         return []
 
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html_text, 'html.parser')
     tbody = soup.find('tbody')
     if not tbody:
-        print("⚠️ <tbody> not found in the HTML")
+        print("⚠️ <tbody> not found")
         return []
 
     links = []
@@ -74,15 +53,14 @@ async def fetch_title_links():
         if title_link and title_link['href'].startswith('//'):
             links.append('https:' + title_link['href'])
 
-    return links[:13]  # ✅ Scrape only first 13 movies
+    return links[:13]
 
-async def fetch_page_details(link):
-    """ Extract movie title, magnet link, and file size from a movie page """
-    html = await fetch_html(link)
-    if not html:
+def fetch_page_details(link):
+    html_text = fetch_html(link)
+    if not html_text:
         return None, None, None
 
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html_text, 'html.parser')
     title = soup.title.string.replace("Download", "").replace("Torrent", "").strip() if soup.title else "No title"
 
     magnet = None
@@ -90,59 +68,43 @@ async def fetch_page_details(link):
         if script.string:
             match = re.search(r'var mainMagnetURL\s*=\s*"(magnet:[^"]+)"', script.string)
             if match:
-                magnet = match.group(1)
+                magnet = clean_magnet_link(match.group(1))
                 break
 
-    # ✅ Clean the magnet link by removing the specific tracker domain
-    if magnet:
-        magnet = clean_magnet_link(magnet)
-
-    # Extract file size
     file_size = None
-    lists = soup.find_all("ul", class_="list")
-    for ul in lists:
+    for ul in soup.find_all("ul", class_="list"):
         for li in ul.find_all("li"):
-            strong_tag = li.find("strong")
-            span_tag = li.find("span")
-            if strong_tag and span_tag and strong_tag.text.strip() == "Total size":
-                file_size = span_tag.text.strip()
+            if (li.find("strong") and li.find("span")
+                and li.find("strong").text.strip() == "Total size"):
+                file_size = li.find("span").text.strip()
                 break
 
     return title, magnet, file_size
 
 @app.route('/')
 def home():
-    return "✅ 1337x Scraper Is Running"
+    return "✅ 1337x Scraper (Cloudscraper) Is Running"
 
 @app.route('/rss', methods=['GET'])
 def rss():
-    """ Fetch first 13 movie titles, magnet links, and file sizes as RSS feed """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    title_links = loop.run_until_complete(fetch_title_links())
+    title_links = fetch_title_links()
     if not title_links:
         return jsonify({"error": "No links found"}), 500
 
-    # ✅ Run multiple tasks asynchronously
-    tasks = [fetch_page_details(link) for link in title_links]
-    results = loop.run_until_complete(asyncio.gather(*tasks))
-
-    # Generate RSS items
     rss_items = ""
-    for title, magnet, file_size in results:
+    for link in title_links:
+        title, magnet, size = fetch_page_details(link)
         if title and magnet:
-            description = f"Size: {file_size if file_size else '.'}"
+            description = f"Size: {size if size else 'Unknown'}"
             rss_items += f"""
             <item>
-                <title>{title}</title>
-                <link>{magnet}</link>
-                <description>{description}</description>
+                <title>{html.escape(title)}</title>
+                <link>{html.escape(magnet)}</link>
+                <description>{html.escape(description)}</description>
             </item>
             """
 
-    # Generate the full RSS feed
-    base_url = f"https://www.1377x.to/cat/Movies/1/"
+    base_url = "https://www.1377x.to/cat/Movies/1/"
     rss_feed = f"""<?xml version="1.0" encoding="UTF-8"?>
     <rss version="2.0">
         <channel>
