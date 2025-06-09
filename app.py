@@ -9,7 +9,7 @@ from flask import Flask, jsonify, Response
 
 app = Flask(__name__)
 
-# Proxy configuration
+# Proxy configuration - properly formatted
 PROXY_URL = "http://ogais4d6kcfVkEyuGy3nz1mT:GuRA1qAXgoi85mW9GZYJsJKN@in160.nordvpn.com:89"
 
 # ✅ Updated URL and Headers
@@ -29,10 +29,14 @@ def clean_magnet_link(magnet):
 
 async def fetch_html(url):
     """ Fetch HTML content with error handling and timeout """
+    proxies = {
+        "http://": PROXY_URL,
+        "https://": PROXY_URL.replace("http://", "https://") if PROXY_URL.startswith("http://") else PROXY_URL
+    }
+    
     async with httpx.AsyncClient(
         timeout=10,
-        proxies=PROXY_URL,
-        transport=httpx.AsyncHTTPTransport(retries=3)  # Add retries for better reliability
+        transport=httpx.AsyncHTTPTransport(retries=3, proxy=httpx.Proxy(PROXY_URL))
     ) as client:
         try:
             response = await client.get(url, cookies=COOKIES, headers=HEADERS)
