@@ -58,7 +58,7 @@ async def fetch_title_links():
         if title_link and title_link['href'].startswith('//'):
             links.append('https:' + title_link['href'])
 
-    return links[:13]  # ✅ Scrape only first 13 movies
+    return links[:10]  # ✅ Scrape only first 13 movies
 
 async def fetch_page_details(link):
     """ Extract movie title, magnet link, and file size from a movie page """
