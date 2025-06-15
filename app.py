@@ -10,7 +10,7 @@ from flask import Flask, jsonify, Response
 app = Flask(__name__)
 
 # Proxy configuration - properly formatted
-PROXY_URL = "http://ogais4d6kcfVkEyuGy3nz1mT:GuRA1qAXgoi85mW9GZYJsJKN@in160.nordvpn.com:89"
+PROXY_URL = "https://ogais4d6kcfVkEyuGy3nz1mT:GuRA1qAXgoi85mW9GZYJsJKN@in160.nordvpn.com:89"
 
 # ✅ Updated URL and Headers
 BASE_URL = "https://old-gods.8juncf.workers.dev/1749534372373/cat/Movies/1/"
