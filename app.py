@@ -13,7 +13,7 @@ app = Flask(__name__)
 PROXY_URL = "https://ogais4d6kcfVkEyuGy3nz1mT:GuRA1qAXgoi85mW9GZYJsJKN@in160.nordvpn.com:89"
 
 # ✅ Updated URL and Headers
-BASE_URL = "https://old-gods.hashbeyonce.workers.dev/1750562406553/cat/Movies/1/"
+BASE_URL = "https://old-gods.hash89a03.workers.dev/1750768285540/cat/Movies/1/"
 COOKIES = {'hashhackers_1337x_web_app': 'YZtwVtwDBq2HhLR37W9mNQ=='}
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
