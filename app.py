@@ -14,7 +14,7 @@ PROXY_URL = "https://ogais4d6kcfVkEyuGy3nz1mT:GuRA1qAXgoi85mW9GZYJsJKN@in160.nor
 
 # ✅ Updated URL and Headers
 BASE_URL = "https://old-gods.hashnc5py.workers.dev/1752135574108/cat/Movies/1/"
-COOKIES = {'hashhackers_1337x_web_app': 'YZtwVtwDBq2HhLR37W9mNQ=='}
+COOKIES = {'hashhackers_1337x_web_app': 'XfhsSKTZWKdCPiAukJ3+1w=='}
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
 }
