@@ -13,8 +13,8 @@ app = Flask(__name__)
 PROXY_URL = "https://ogais4d6kcfVkEyuGy3nz1mT:GuRA1qAXgoi85mW9GZYJsJKN@in160.nordvpn.com:89"
 
 # ✅ Updated URL and Headers
-BASE_URL = "https://app.google-web-api.workers.dev/1752725221073/cat/Movies/1/"
-COOKIES = {'hashhackers_1337x_web_app': '4DtBZkLoySpwnem84vN5vg=='}
+BASE_URL = "https://2d5149d0-app.google-life.workers.dev/1754146198146/cat/Movies/1/"
+COOKIES = {'hashhackers_1337x_web_app': 'cSzZ+/wPWNSvgddAcmAUyg=='}
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
 }
