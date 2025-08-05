@@ -13,7 +13,7 @@ app = Flask(__name__)
 PROXY_URL = "https://x6DzSR6XnGeLnBLk32UPvjWg:CFcqTXQDxKybUf6qAHTmSxpW@in-mum.prod.surfshark.com:443"
 
 # ✅ Updated URL and Headers
-BASE_URL = "https://2d5149d0-app.google-life.workers.dev/1754459103384/cat/Movies/1"
+BASE_URL = "https://28e0cc59-app.google-life.workers.dev/1754459300630/cat/Movies/1/"
 COOKIES = {'hashhackers_1337x_web_app': 'cSzZ+/wPWNSvgddAcmAUyg=='}
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
@@ -21,7 +21,7 @@ HEADERS = {
 
 def clean_magnet_link(magnet):
     """Remove specific tracker domain from the magnet link."""
-    magnet = re.sub(r'(?<=dn=)\[1337x\.HashHackers\.Com\]', '', magnet)
+    magnet = re.sub(r'(?<=dn=)\[1337x-to\.HashHackers\.Com\]', '', magnet)
     magnet = re.sub(r'&+', '&', magnet)
     if magnet.endswith('&'):
         magnet = magnet[:-1]
