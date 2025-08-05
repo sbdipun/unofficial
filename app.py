@@ -10,10 +10,10 @@ from flask import Flask, jsonify, Response
 app = Flask(__name__)
 
 # Proxy configuration - properly formatted
-PROXY_URL = "https://ogais4d6kcfVkEyuGy3nz1mT:GuRA1qAXgoi85mW9GZYJsJKN@in160.nordvpn.com:89"
+PROXY_URL = "https://x6DzSR6XnGeLnBLk32UPvjWg:CFcqTXQDxKybUf6qAHTmSxpW@in-mum.prod.surfshark.com:443"
 
 # ✅ Updated URL and Headers
-BASE_URL = "https://2d5149d0-app.google-life.workers.dev/1754146198146/cat/Movies/1/"
+BASE_URL = "https://2d5149d0-app.google-life.workers.dev/1754459103384/cat/Movies/1"
 COOKIES = {'hashhackers_1337x_web_app': 'cSzZ+/wPWNSvgddAcmAUyg=='}
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
